@@ -41,5 +41,17 @@ class ProductModelHive extends HiveObject {
     this.id,
   });
 
+    factory ProductModelHive.fromJson(Map<String, dynamic> json) {
+    return ProductModelHive(
+      sku: json['sku'],
+      productName: json['product_name'],
+      productImage: json['product_image'],
+      productRating: json['product_rating'],
+      actualPrice: json['actual_price'],
+      offerPrice: json['offer_price'],
+      discount: json['discount'],
+    );
+  }
+
   
 }

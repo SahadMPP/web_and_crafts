@@ -4,24 +4,27 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
-import 'package:web_craft/home/model/catagory_model.dart';
 import 'package:web_craft/home/model/hive/catagory_hive.dart';
-import 'package:web_craft/home/model/product_model.dart';
+import 'package:web_craft/home/model/hive/product_hive.dart';
 import 'package:web_craft/home/utils/const_values.dart';
+import 'package:web_craft/home/utils/hive_storage.dart';
 
 abstract class HomeRepo {
   Future<List<CategoryModelHive>> getCategories();
-  Future<List<ProductModel>> getMostPopulorProduct(BuildContext context);
-  Future<List<ProductModel>> getFeaturedProduct();
+  Future<List<ProductModelHive>> getMostPopulorProduct(BuildContext context);
+  Future<List<ProductModelHive>> getFeaturedProduct();
   Future<List<String>> getSliderImage();
   Future<String> getAdImage();
 
   Future<void> addCategoryToHive(CategoryModelHive value);
   Future<void> getAllCategoryFormLocalDatabase();
-}
 
-ValueNotifier<List<CategoryModelHive>> categoryModelListHive =
-    ValueNotifier([]);
+  Future<void> addMostproductToHive(ProductModelHive value);
+  Future<void> getAllMostProductFormLocalDatabase();
+
+  Future<void> addFeatureproductToHive(ProductModelHive value);
+  Future<void> getAllFeatureProductFormLocalDatabase();
+}
 
 class HomeRepoImpli extends HomeRepo {
   final uri = Uri.parse(COMMEN_URL);
@@ -38,7 +41,8 @@ class HomeRepoImpli extends HomeRepo {
             debugPrint('Category Data Found:');
             final List<dynamic> contents = item['contents'] ?? [];
             for (var content in contents) {
-              list.add(CategoryModelHive.fromJson(content as Map<String, dynamic>));
+              list.add(
+                  CategoryModelHive.fromJson(content as Map<String, dynamic>));
             }
           }
         }
@@ -66,8 +70,9 @@ class HomeRepoImpli extends HomeRepo {
   }
 
   @override
-  Future<List<ProductModel>> getMostPopulorProduct(BuildContext context) async {
-    List<ProductModel> list = [];
+  Future<List<ProductModelHive>> getMostPopulorProduct(
+      BuildContext context) async {
+    List<ProductModelHive> list = [];
     try {
       final response = await http.get(uri);
 
@@ -77,7 +82,8 @@ class HomeRepoImpli extends HomeRepo {
           if (item['title'] == "Most Popular") {
             final List<dynamic> condents = item['contents'] ?? [];
             for (var condent in condents) {
-              list.add(ProductModel.fromJson(condent as Map<String, dynamic>));
+              list.add(
+                  ProductModelHive.fromJson(condent as Map<String, dynamic>));
             }
             if (list.isEmpty) debugPrint('No most popular product found');
             return list;
@@ -99,13 +105,24 @@ class HomeRepoImpli extends HomeRepo {
     } catch (e) {
       throw Exception('Faild get most popular aknowError$e');
     }
+    for (var element in list) {
+      await addMostproductToHive(ProductModelHive(
+        actualPrice: element.actualPrice,
+        discount: element.discount,
+        offerPrice: element.offerPrice,
+        productImage: element.productImage,
+        productName: element.productName,
+        productRating: element.productRating,
+        sku: element.sku,
+      ));
+    }
 
     return list;
   }
 
   @override
-  Future<List<ProductModel>> getFeaturedProduct() async {
-    List<ProductModel> list = [];
+  Future<List<ProductModelHive>> getFeaturedProduct() async {
+    List<ProductModelHive> list = [];
     try {
       final response = await http.get(uri);
 
@@ -116,7 +133,8 @@ class HomeRepoImpli extends HomeRepo {
           if (item['title'] == 'Best Sellers') {
             List<dynamic> condents = item['contents'] ?? [];
             for (var condent in condents) {
-              list.add(ProductModel.fromJson(condent as Map<String, dynamic>));
+              list.add(
+                  ProductModelHive.fromJson(condent as Map<String, dynamic>));
             }
           }
           if (list.isEmpty) debugPrint('Field to get best seller products');
@@ -130,6 +148,17 @@ class HomeRepoImpli extends HomeRepo {
       throw Exception('Format Exception fond in product fatching');
     } catch (e) {
       throw Exception('Field to get FeaturedProduct Error$e');
+    }
+     for (var element in list) {
+      await addFeatureproductToHive(ProductModelHive(
+        actualPrice: element.actualPrice,
+        discount: element.discount,
+        offerPrice: element.offerPrice,
+        productImage: element.productImage,
+        productName: element.productName,
+        productRating: element.productRating,
+        sku: element.sku,
+      ));
     }
     return list;
   }
@@ -215,5 +244,65 @@ class HomeRepoImpli extends HomeRepo {
     categoryModelListHive.value.clear();
     categoryModelListHive.value.addAll(categotydb.values);
     categoryModelListHive.notifyListeners();
+  }
+
+  @override
+  Future<void> addMostproductToHive(ProductModelHive value) async {
+    final productDb = await Hive.openBox<ProductModelHive>('most_product_db');
+    final id = await productDb.add(value);
+    value.id = id;
+    final product = productDb.get(id);
+    await productDb.put(
+        id,
+        ProductModelHive(
+            actualPrice: product!.actualPrice,
+            discount: product.discount,
+            offerPrice: product.offerPrice,
+            productImage: product.productImage,
+            productName: product.productName,
+            productRating: product.productRating,
+            sku: product.sku,
+            id: id));
+    mostProductModelListHive.value.add(product);
+    mostProductModelListHive.notifyListeners();
+  }
+
+  @override
+  Future<void> getAllMostProductFormLocalDatabase() async {
+    final categotydb = await Hive.openBox<ProductModelHive>('most_product_db');
+    mostProductModelListHive.value.clear();
+    mostProductModelListHive.value.addAll(categotydb.values);
+    mostProductModelListHive.notifyListeners();
+  }
+
+  @override
+  Future<void> addFeatureproductToHive(ProductModelHive value) async {
+    final productDb =
+        await Hive.openBox<ProductModelHive>('feature_product_db');
+    final id = await productDb.add(value);
+    value.id = id;
+    final product = productDb.get(id);
+    await productDb.put(
+        id,
+        ProductModelHive(
+            actualPrice: product!.actualPrice,
+            discount: product.discount,
+            offerPrice: product.offerPrice,
+            productImage: product.productImage,
+            productName: product.productName,
+            productRating: product.productRating,
+            sku: product.sku,
+            id: id));
+    featuredProductModelListHive.value.add(product);
+    featuredProductModelListHive.notifyListeners();
+  }
+
+  @override
+  Future<void> getAllFeatureProductFormLocalDatabase() async {
+    final categotydb =
+        await Hive.openBox<ProductModelHive>('feature_product_db');
+    featuredProductModelListHive.value.clear();
+    featuredProductModelListHive.value.addAll(categotydb.values);
+    featuredProductModelListHive.notifyListeners();
   }
 }

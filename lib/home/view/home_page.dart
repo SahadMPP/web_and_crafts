@@ -1,12 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:web_craft/home/componets/app_title.dart';
 import 'package:web_craft/home/componets/error_image_placeholder.dart';
 import 'package:web_craft/home/componets/home_appbar.dart';
 import 'package:web_craft/home/model/hive/catagory_hive.dart';
-import 'package:web_craft/home/model/product_model.dart';
+import 'package:web_craft/home/model/hive/product_hive.dart';
 import 'package:web_craft/home/repo/home_repo.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:web_craft/home/utils/hive_storage.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -65,6 +67,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const AppTitle(title: 'Most Popular'),
             ProductList(
+              value: mostProductModelListHive,
               future: homeRepo.getMostPopulorProduct(context),
             ),
             Container(
@@ -80,6 +83,7 @@ class _HomePageState extends State<HomePage> {
             const CategoryList(),
             const AppTitle(title: 'Featured Products'),
             ProductList(
+              value: featuredProductModelListHive,
               future: homeRepo.getFeaturedProduct(),
             ),
           ],
@@ -110,8 +114,9 @@ class _HomePageState extends State<HomePage> {
 
 
 class ProductList extends StatelessWidget {
-  final Future<List<ProductModel>> future;
-  const ProductList({super.key, required this.future});
+  final Future<List<ProductModelHive>> future;
+final  ValueListenable<List<ProductModelHive>> value;
+  const ProductList({super.key, required this.future,required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -125,11 +130,18 @@ class ProductList extends StatelessWidget {
                 child: CircularProgressIndicator(),
               );
             } else if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  'Failed to get data: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.black),
-                ),
+              return ValueListenableBuilder(
+                valueListenable: value,
+                builder: (context,data,_) {
+                  return ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemBuilder: (context, index) {
+                        ProductModelHive product = data[index];
+                        return ProductCard(product: product);
+                      },
+                      itemCount: data.length,
+                    );
+                }
               );
             } else if (!snapshot.hasData || snapshot.data == null) {
               return const Center(
@@ -139,7 +151,7 @@ class ProductList extends StatelessWidget {
                 ),
               );
             } else {
-              List<ProductModel> mostPopularProduct = snapshot.data!;
+              List<ProductModelHive> mostPopularProduct = snapshot.data!;
               if (mostPopularProduct.isEmpty) {
                 return const Center(
                   child: Text(
@@ -151,7 +163,7 @@ class ProductList extends StatelessWidget {
                 return ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemBuilder: (context, index) {
-                    ProductModel product = mostPopularProduct[index];
+                    ProductModelHive product = mostPopularProduct[index];
                     return ProductCard(product: product);
                   },
                   itemCount: mostPopularProduct.length,
@@ -164,13 +176,13 @@ class ProductList extends StatelessWidget {
 }
 
 class ProductCard extends StatelessWidget {
-  final ProductModel product;
+  final ProductModelHive product;
   const ProductCard({super.key, required this.product});
 
   @override
   Widget build(BuildContext context) {
     final RegExp digitRegExp = RegExp(r'\d');
-    final Iterable<Match> matches = digitRegExp.allMatches(product.discount);
+    final Iterable<Match> matches = digitRegExp.allMatches(product.discount!);
     final String result = matches.map((m) => m.group(0)!).join();
 
     int discound = int.parse(result);
@@ -187,7 +199,7 @@ class ProductCard extends StatelessWidget {
           children: [
             Expanded(
               child: Image.network(
-                product.productImage,
+                product.productImage!,
                 errorBuilder: (context, error, stackTrace) {
                   return const ErrorImagePlaceHolder();
                 },
@@ -225,7 +237,7 @@ class ProductCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    product.productName,
+                    product.productName!,
                     textAlign: TextAlign.start,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -240,7 +252,7 @@ class ProductCard extends StatelessWidget {
                       itemBuilder: (context, index) => Icon(
                         Icons.star,
                         size: 14,
-                        color: product.productRating >= index + 1
+                        color: product.productRating! >= index + 1
                             ? Colors.yellow
                             : Colors.grey,
                       ),
@@ -250,13 +262,13 @@ class ProductCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        product.offerPrice.replaceAll(RegExp(r'â¹'), ''),
+                        product.offerPrice!.replaceAll(RegExp(r'â¹'), ''),
                         style:
                             const TextStyle(color: Colors.black, fontSize: 8),
                       ),
                       const SizedBox(width: 2),
                       Text(
-                        product.actualPrice.replaceAll(RegExp(r'â¹'), ''),
+                        product.actualPrice!.replaceAll(RegExp(r'â¹'), ''),
                         style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 8,
