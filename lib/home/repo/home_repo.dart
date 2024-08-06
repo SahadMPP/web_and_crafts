@@ -27,6 +27,7 @@ abstract class HomeRepo {
 }
 
 class HomeRepoImpli extends HomeRepo {
+  DatabaseFunctoins databaseFunction = DatabaseFunctoins();
   final uri = Uri.parse(COMMEN_URL);
 
   @override
@@ -149,7 +150,7 @@ class HomeRepoImpli extends HomeRepo {
     } catch (e) {
       throw Exception('Field to get FeaturedProduct Error$e');
     }
-     for (var element in list) {
+    for (var element in list) {
       await addFeatureproductToHive(ProductModelHive(
         actualPrice: element.actualPrice,
         discount: element.discount,
@@ -226,6 +227,37 @@ class HomeRepoImpli extends HomeRepo {
 
   @override
   Future<void> addCategoryToHive(CategoryModelHive value) async {
+    return databaseFunction.addCategoryToHive(value);
+  }
+
+  @override
+  Future<void> getAllCategoryFormLocalDatabase() async {
+    return databaseFunction.getAllCategoryFormLocalDatabase();
+  }
+
+  @override
+  Future<void> addMostproductToHive(ProductModelHive value) async {
+    return databaseFunction.addMostproductToHive(value);
+  }
+
+  @override
+  Future<void> getAllMostProductFormLocalDatabase() async {
+    return databaseFunction.getAllMostProductFormLocalDatabase();
+  }
+
+  @override
+  Future<void> addFeatureproductToHive(ProductModelHive value) async {
+    return databaseFunction.addFeatureproductToHive(value);
+  }
+
+  @override
+  Future<void> getAllFeatureProductFormLocalDatabase() async {
+    return databaseFunction.getAllFeatureProductFormLocalDatabase();
+  }
+}
+
+class DatabaseFunctoins extends ChangeNotifier {
+  addCategoryToHive(CategoryModelHive value) async {
     final catogoryDb = await Hive.openBox<CategoryModelHive>('category_db');
     final id = await catogoryDb.add(value);
     value.id = id;
@@ -238,16 +270,14 @@ class HomeRepoImpli extends HomeRepo {
     categoryModelListHive.notifyListeners();
   }
 
-  @override
-  Future<void> getAllCategoryFormLocalDatabase() async {
+  getAllCategoryFormLocalDatabase() async {
     final categotydb = await Hive.openBox<CategoryModelHive>('category_db');
     categoryModelListHive.value.clear();
     categoryModelListHive.value.addAll(categotydb.values);
     categoryModelListHive.notifyListeners();
   }
 
-  @override
-  Future<void> addMostproductToHive(ProductModelHive value) async {
+  addMostproductToHive(ProductModelHive value) async {
     final productDb = await Hive.openBox<ProductModelHive>('most_product_db');
     final id = await productDb.add(value);
     value.id = id;
@@ -267,16 +297,14 @@ class HomeRepoImpli extends HomeRepo {
     mostProductModelListHive.notifyListeners();
   }
 
-  @override
-  Future<void> getAllMostProductFormLocalDatabase() async {
+  getAllMostProductFormLocalDatabase() async {
     final categotydb = await Hive.openBox<ProductModelHive>('most_product_db');
     mostProductModelListHive.value.clear();
     mostProductModelListHive.value.addAll(categotydb.values);
     mostProductModelListHive.notifyListeners();
   }
 
-  @override
-  Future<void> addFeatureproductToHive(ProductModelHive value) async {
+  addFeatureproductToHive(ProductModelHive value) async {
     final productDb =
         await Hive.openBox<ProductModelHive>('feature_product_db');
     final id = await productDb.add(value);
@@ -297,8 +325,7 @@ class HomeRepoImpli extends HomeRepo {
     featuredProductModelListHive.notifyListeners();
   }
 
-  @override
-  Future<void> getAllFeatureProductFormLocalDatabase() async {
+  getAllFeatureProductFormLocalDatabase() async {
     final categotydb =
         await Hive.openBox<ProductModelHive>('feature_product_db');
     featuredProductModelListHive.value.clear();

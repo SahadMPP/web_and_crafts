@@ -4,6 +4,9 @@ import 'package:web_craft/home/componets/bottom_navigation.dart';
 import 'package:web_craft/home/model/hive/catagory_hive.dart';
 import 'package:web_craft/home/model/hive/product_hive.dart';
 import 'package:web_craft/home/model/hive/slider_image_hive.dart';
+import 'package:provider/provider.dart';
+import 'package:web_craft/home/view_model/home_provider.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +20,9 @@ void main() async {
     if (!Hive.isAdapterRegistered(SliderimageHiveAdapter().typeId)) {
     Hive.registerAdapter(SliderimageHiveAdapter());
   }
-  runApp(const MyApp());
+    runApp(
+    const MyApp(),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -25,9 +30,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: BottomNav(),
+    return MultiProvider(
+providers: [
+        ChangeNotifierProvider(create: (_) => HomeProvider()),
+      ],
+      child: const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: BottomNav(),
+      ),
     );
   }
 }
